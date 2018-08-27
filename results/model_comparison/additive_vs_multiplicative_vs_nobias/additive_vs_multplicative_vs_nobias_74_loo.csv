@@ -1,0 +1,4 @@
+,LOO,pLOO,dLOO,weight,SE,dSE,shape_warn
+additive,2753.8,3.91,0.0,0.99,33.84,0.0,1
+multiplicative,2756.32,4.44,2.52,0.0,33.62,3.24,0
+nobias,2785.65,2.67,31.84,0.01,31.24,10.7,1

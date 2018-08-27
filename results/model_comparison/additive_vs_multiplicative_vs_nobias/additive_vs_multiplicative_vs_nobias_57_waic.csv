@@ -1,0 +1,4 @@
+,WAIC,pWAIC,dWAIC,weight,SE,dSE,var_warn
+additive,1541.75,3.74,0.0,0.54,23.68,0.0,0
+multiplicative,1541.95,3.79,0.2,0.46,24.31,2.76,0
+nobias,1584.61,2.67,42.86,0.0,22.96,12.7,0
