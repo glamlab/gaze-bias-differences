@@ -1,3 +1,3 @@
 ,WAIC,pWAIC,dWAIC,weight,SE,dSE,var_warn
-multiplicative,1856.71,4.09,0.0,0.69,22.09,0.0,0
+GLAM,1856.71,4.09,0.0,0.69,22.09,0.0,0
 nobias,1859.13,2.6,2.42,0.31,22.57,5.12,0

@@ -317,7 +317,9 @@ def make_subject_model(rts, gaze, values, error_ll,
                                               lower=zerotol, upper=0.0003,
                                               val=v_val,
                                               testval=v_testval)
-        gamma_testval = np.clip(-3 + 3.6*np.mean(np.argmax(values, axis=1) == 0), -0.9, 0.9)
+        gamma_testval = np.clip(-3 + 3.6 * np.mean(np.argmax(values, axis=1) == 0),
+                                gamma_bounds[0] + 0.1,
+                                gamma_bounds[1] - 0.1)
         gamma = generate_subject_model_parameters(parameter='gamma',
                                                   design=design['gamma'],
                                                   lower=gamma_bounds[0], upper=gamma_bounds[1],

@@ -1,60 +1,147 @@
-from numpy.linalg import LinAlgError
+# from numpy.linalg import LinAlgError
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+import scipy as sp
 import os
 import errno
 
 
-def compute_gaze_influence(data, n_items=None):
-    """
-    """
-    import statsmodels.api as sm
+def sample_corr(x1, x2, alpha=0.05, verbose=True, return_result=False):
+    
+    w, normal_1 = sp.stats.shapiro(x1)
+    w, normal_2 = sp.stats.shapiro(x2)
 
-    other_value_cols = ['item_value_{}'.format(i)
-                        for i in range(n_items)
-                        if i != 0]
+    if (normal_1 < alpha) or (normal_2 < alpha):
+        r, p = sp.stats.spearmanr(x1, x2)
+        if verbose:
+            print('Normality assumption violated: True')
+            print('spearman r = {}, p = {}'.format(r, p))
+    else:
+        r, p = sp.stats.pearsonr(x1, x2)
+        if verbose:
+            print('pearson r = {}, p = {}'.format(r, p))
 
-    # calculate relative item value of left over mean of other options
-    if 'value_left_minus_mean_others' not in data.columns:
-        data['value_left_minus_mean_others'] = data['item_value_0'] - (1. / (n_items - 1)) * (data[other_value_cols].sum(axis=1))
-    # calculate value range of other options
-    if n_items > 2:
-        data['value_range_others'] = np.abs(data[other_value_cols].max(axis=1) - data[other_value_cols].min(axis=1))
-    # Add indicator column for left choices
-    data['left_chosen'] = data['choice'] == 0
-    # Calculate relative gaze advantage of left over other options
-    other_gaze_cols = ['gaze_{}'.format(i)
-                       for i in range(n_items)
-                       if i != 0]
-    data['gaze_left_minus_mean_others'] = data['gaze_0'] - (1. / (n_items-1)) * (data[other_gaze_cols].sum(axis=1))
-    # Add indicator column for trials with longer gaze towards left option
-    data['left_longer'] = data['gaze_left_minus_mean_others'] > 0
+    if return_result:
+        return r, p
 
-    data_out = pd.DataFrame()
 
-    for s, subject in enumerate(data['subject'].unique()):
-        subject_data = data[data['subject'] == subject].copy()
-        if n_items > 2:
-            X = subject_data[['value_left_minus_mean_others', 'value_range_others']]
-        else:
-            X = subject_data[['value_left_minus_mean_others']]
-        X = sm.add_constant(X)
-        y = subject_data['left_chosen']
+def ind_sample_comp(x1, x2, alpha=0.05):
 
-        logit = sm.Logit(y, X)
+    # count N
+    N = x1.shape[0] + x2.shape[0]
+    df = N-2
 
-        result = logit.fit(disp=0)
-        predicted_pchooseleft = result.predict(X)
+    # test for equal variance
+    unequal_variance = False
+    w, p = sp.stats.levene(x1, x2)
+    if p < alpha:
+        unequal_variance = True
+    print('Equal variance assumption violated: {}'.format(unequal_variance))
 
-        subject_data['corrected_choice'] = subject_data['left_chosen'] - predicted_pchooseleft
-        data_out = pd.concat([data_out, subject_data])
+    # test for normal variance
+    non_normal_variance = False
+    w1, p1 = sp.stats.shapiro(x1)
+    w2, p2 = sp.stats.shapiro(x2)
+    if p1 < alpha:
+        non_normal_variance = True
+    if p2 < alpha:
+        non_normal_variance = True
+    print('Normality assumption violated: {}'.format(non_normal_variance))
 
-    # Compute difference in corrected P(choose left) between positive and negative final gaze advantage
-    tmp = data_out.groupby(['subject', 'left_longer']).corrected_choice.mean().unstack()
-    gaze_influence = (tmp[True] - tmp[False]).values
+    # compute test statistic
+    if (not unequal_variance) & (not non_normal_variance):
+        # statistic
+        t, p = sp.stats.ttest_ind(x1, x2)
+        # effect size
+        d = (np.mean(x1) - np.mean(x2)) / \
+            np.sqrt((np.var(x1) + np.var(x2)) / 2.)
+        # 95% CI
+        CI = [(np.mean(x1) - np.mean(x2)) - sp.stats.t.ppf(1-(alpha/2.), df) * np.sqrt((np.var(x1)/x1.shape[0]) + (np.var(x2)/x2.shape[0])),
+              (np.mean(x1) - np.mean(x2)) + sp.stats.t.ppf(1-(alpha/2.), df) * np.sqrt((np.var(x1)/x1.shape[0]) + (np.var(x2)/x2.shape[0]))]
+        test_indicator = 't'
+    elif (unequal_variance) * (not non_normal_variance):
+        # statistic
+        t, p = sp.stats.ttest_ind(x1, x2, equal_var=False)
+        # effect size
+        d = (np.mean(x1) - np.mean(x2)) / \
+            np.sqrt((np.var(x1) + np.var(x2)) / 2.)
+        # 95% CI
+        CI = [(np.mean(x1) - np.mean(x2)) - sp.stats.t.ppf(1-(alpha/2.), df) * np.sqrt((np.var(x1)/x1.shape[0]) + (np.var(x2)/x2.shape[0])),
+              (np.mean(x1) - np.mean(x2)) + sp.stats.t.ppf(1-(alpha/2.), df) * np.sqrt((np.var(x1)/x1.shape[0]) + (np.var(x2)/x2.shape[0]))]
+        test_indicator = 't'
+    else:
+        # statistic
+        t, p = sp.stats.mannwhitneyu(x1, x2)
+        # effect size
+        d = 1 - (2*t / (x1.shape[0] * x2.shape[0]))
+        # 95% CI
+        CI = [None, None]
+        test_indicator = 'U'
 
-    return gaze_influence
+    if test_indicator != 'U':
+        print('X1 - X2: {}({}) = {}, p = {}, d = {}, CI = [{}, {}]'.format(
+            test_indicator, df, t, p, d, CI[0], CI[1]))
+    else:
+        print('X1 - X2: {} = {}, p = {}, d = {}'.format(
+            test_indicator, np.int(t), p, d))
+
+
+# def compute_gaze_influence(data, n_items=None):
+#     """
+#     """
+#     import statsmodels.api as sm
+
+#     other_value_cols = ['item_value_{}'.format(i)
+#                         for i in range(n_items)
+#                         if i != 0]
+
+#     # calculate relative item value of left over mean of other options
+#     if 'value_left_minus_mean_others' not in data.columns:
+#         data['value_left_minus_mean_others'] = data['item_value_0'] - \
+#             (1. / (n_items - 1)) * (data[other_value_cols].sum(axis=1))
+#     # calculate value range of other options
+#     if n_items > 2:
+#         data['value_range_others'] = np.abs(data[other_value_cols].max(
+#             axis=1) - data[other_value_cols].min(axis=1))
+#     # Add indicator column for left choices
+#     data['left_chosen'] = data['choice'] == 0
+#     # Calculate relative gaze advantage of left over other options
+#     other_gaze_cols = ['gaze_{}'.format(i)
+#                        for i in range(n_items)
+#                        if i != 0]
+#     data['gaze_left_minus_mean_others'] = data['gaze_0'] - \
+#         (1. / (n_items-1)) * (data[other_gaze_cols].sum(axis=1))
+#     # Add indicator column for trials with longer gaze towards left option
+#     data['left_longer'] = data['gaze_left_minus_mean_others'] > 0
+
+#     data_out = pd.DataFrame()
+
+#     for s, subject in enumerate(data['subject'].unique()):
+#         subject_data = data[data['subject'] == subject].copy()
+#         if n_items > 2:
+#             X = subject_data[[
+#                 'value_left_minus_mean_others', 'value_range_others']]
+#         else:
+#             X = subject_data[['value_left_minus_mean_others']]
+#         X = sm.add_constant(X)
+#         y = subject_data['left_chosen']
+
+#         logit = sm.Logit(y, X)
+
+#         result = logit.fit(disp=0)
+#         predicted_pchooseleft = result.predict(X)
+
+#         subject_data['corrected_choice'] = subject_data['left_chosen'] - \
+#             predicted_pchooseleft
+#         data_out = pd.concat([data_out, subject_data])
+
+#     # Compute difference in corrected P(choose left) between positive and negative final gaze advantage
+#     tmp = data_out.groupby(['subject', 'left_longer']
+#                            ).corrected_choice.mean().unstack()
+#     gaze_influence = (tmp[True] - tmp[False]).values
+
+#     return gaze_influence
 
 
 def compute_gaze_influence_score(data, n_items=None):
@@ -93,7 +180,8 @@ def compute_gaze_influence_score(data, n_items=None):
             index = np.where(np.arange(n_items) != i)
             rel_gaze[t, i] = gaze[t, i] - np.mean(gaze[t, index])
             rel_values[t, i] = values[t, i] - np.mean(values[t, index])
-            value_range[t, i] = np.max(values[t, index]) - np.min(values[t, index])
+            value_range[t, i] = np.max(
+                values[t, index]) - np.min(values[t, index])
 
     # create new dataframe (long format, one row per item)
     data_long = pd.DataFrame(dict(subject=np.repeat(data['subject'].values, n_items),
@@ -102,7 +190,8 @@ def compute_gaze_influence_score(data, n_items=None):
                                   rel_value=rel_values.ravel(),
                                   value_range_others=value_range.ravel(),
                                   rel_gaze=rel_gaze.ravel(),
-                                  gaze_pos=np.array(rel_gaze.ravel() > 0, dtype=np.bool),
+                                  gaze_pos=np.array(
+                                      rel_gaze.ravel() > 0, dtype=np.bool),
                                   gaze=gaze.ravel()))
 
     # estimate value-based choice prob.
@@ -125,13 +214,15 @@ def compute_gaze_influence_score(data, n_items=None):
         result = logit.fit(disp=0, maxiter=100)  # method='lbfgs',
         predicted_pchoose = result.predict(X)
 
-        subject_data['corrected_choice'] = subject_data['is_choice'] - predicted_pchoose
+        subject_data['corrected_choice'] = subject_data['is_choice'] - \
+            predicted_pchoose
         data_out_list.append(subject_data)
 
     data_out = pd.concat(data_out_list)
 
     # compute corrected psychometric, given gaze
-    tmp = data_out.groupby(['subject', 'gaze_pos']).corrected_choice.mean().unstack()
+    tmp = data_out.groupby(['subject', 'gaze_pos']
+                           ).corrected_choice.mean().unstack()
     gaze_influence_score = (tmp[True] - tmp[False]).values
 
     return gaze_influence_score
@@ -161,7 +252,8 @@ def add_best_chosen(df):
     df = df.copy()
     values = df[[c for c in df.columns if c.startswith('item_value_')]].values
     choices = df['choice'].values.astype(np.int)
-    best_chosen = (values[np.arange(choices.size), choices] == np.nanmax(values, axis=1)).astype(int)
+    best_chosen = (values[np.arange(choices.size), choices]
+                   == np.nanmax(values, axis=1)).astype(int)
     df['best_chosen'] = best_chosen
     return df
 
@@ -227,7 +319,7 @@ def sci_notation(num, exact=False, decimal_digits=1, precision=None, exponent=No
     coeff = round(num / float(10**exponent), decimal_digits)
     if not precision:
         precision = decimal_digits
-    
+
     if exact:
         return r"${0:.{2}f}\times10^{{{1:d}}}$".format(coeff, exponent, precision)
     else:
@@ -252,7 +344,7 @@ def write_summary(lm, filename):
     F = lm.fvalue
     df = lm.df_resid
     n = lm.nobs
-    
+
     table = pd.DataFrame(dict(predictors=predictors,
                               tvals=tvals,
                               pvals=pvals,
@@ -264,7 +356,7 @@ def write_summary(lm, filename):
                               n=n,
                               r2=r2))
     table.to_csv(filename)
-    
+
 
 def make_sure_path_exists(path):
     """
@@ -276,6 +368,28 @@ def make_sure_path_exists(path):
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
+
+
+# def aggregate_subject_level(data, n_items):
+#     """
+#     Aggregates a single dataset to subject level
+#     """
+#     data = data.copy()
+
+#     # add best chosen variable
+#     data = add_best_chosen(data)
+
+#     # Summarize variables
+#     subject_summary = data.groupby('subject').agg({'rt': ['mean', std, 'min', 'max', se, q1, q3, iqr],
+#                                                    'best_chosen': 'mean'})
+#     # Influence of gaze on P(choose left)
+#     subject_summary['gaze_influence'] = compute_gaze_influence(
+#         data, n_items=n_items)
+
+#     subject_summary['dataset'] = data.groupby(
+#         'subject')['dataset'].head(1).values
+
+#     return subject_summary
 
 
 def aggregate_subject_level(data, n_items):
@@ -291,8 +405,20 @@ def aggregate_subject_level(data, n_items):
     subject_summary = data.groupby('subject').agg({'rt': ['mean', std, 'min', 'max', se, q1, q3, iqr],
                                                    'best_chosen': 'mean'})
     # Influence of gaze on P(choose left)
-    subject_summary['gaze_influence'] = compute_gaze_influence(data, n_items=n_items)
+    subject_summary['gaze_influence'] = compute_gaze_influence_score(data, n_items=n_items)
     
     subject_summary['dataset'] = data.groupby('subject')['dataset'].head(1).values
     
     return subject_summary
+
+
+def aggregate_group_level(subject_summary):
+    """
+    Aggregates a subject summary to group level
+    """
+    group_summary = subject_summary.agg({('rt', 'mean'): ['mean', std, 'min', 'max', se, iqr],
+                                         ('best_chosen', 'mean'): ['mean', std, 'min', 'max', se, iqr],
+                                         'gaze_influence': ['mean', std, 'min', 'max', se, iqr]})
+    group_summary = group_summary[[('rt', 'mean'), ('best_chosen', 'mean'), ('gaze_influence')]].copy()
+    group_summary.columns = ['Mean RT', 'P(choose best)', 'Gaze Influence']
+    return group_summary.T
