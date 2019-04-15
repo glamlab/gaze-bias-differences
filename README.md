@@ -27,5 +27,7 @@ Additional supplementary analyses are contained in the following Jupyter noteboo
 - `SI_3_additive-vs-multiplicative_group-averaged.ipynb`: Group comparison between multiplicative and additive GLAM variants (Supplementary Figure 3)
 - `SI_4_OOS_predicted_behavioural_metrics.ipynb`: Visualization of out-of-sample predicted individual differences and relations on behavioural metrics (Supplementary Figure 4)
 - `SI_5_6_Individual_RT_distributions.ipynb`: Visualization of group and individual response time distributions (Supplementary Figures 5 and 6)
+- `SI_7_parameter_recovery.ipynb`: Visualization of parameter recovery analysis
+    - Recovery performed using `GLAM_parameter_recovery.py` script
 
 The files `analysis_functions.py` and `plotting_functions.py` contain shared functions that are loaded by each notebook separately.
