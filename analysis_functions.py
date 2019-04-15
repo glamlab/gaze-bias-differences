@@ -87,63 +87,6 @@ def ind_sample_comp(x1, x2, alpha=0.05):
             test_indicator, np.int(t), p, d))
 
 
-# def compute_gaze_influence(data, n_items=None):
-#     """
-#     """
-#     import statsmodels.api as sm
-
-#     other_value_cols = ['item_value_{}'.format(i)
-#                         for i in range(n_items)
-#                         if i != 0]
-
-#     # calculate relative item value of left over mean of other options
-#     if 'value_left_minus_mean_others' not in data.columns:
-#         data['value_left_minus_mean_others'] = data['item_value_0'] - \
-#             (1. / (n_items - 1)) * (data[other_value_cols].sum(axis=1))
-#     # calculate value range of other options
-#     if n_items > 2:
-#         data['value_range_others'] = np.abs(data[other_value_cols].max(
-#             axis=1) - data[other_value_cols].min(axis=1))
-#     # Add indicator column for left choices
-#     data['left_chosen'] = data['choice'] == 0
-#     # Calculate relative gaze advantage of left over other options
-#     other_gaze_cols = ['gaze_{}'.format(i)
-#                        for i in range(n_items)
-#                        if i != 0]
-#     data['gaze_left_minus_mean_others'] = data['gaze_0'] - \
-#         (1. / (n_items-1)) * (data[other_gaze_cols].sum(axis=1))
-#     # Add indicator column for trials with longer gaze towards left option
-#     data['left_longer'] = data['gaze_left_minus_mean_others'] > 0
-
-#     data_out = pd.DataFrame()
-
-#     for s, subject in enumerate(data['subject'].unique()):
-#         subject_data = data[data['subject'] == subject].copy()
-#         if n_items > 2:
-#             X = subject_data[[
-#                 'value_left_minus_mean_others', 'value_range_others']]
-#         else:
-#             X = subject_data[['value_left_minus_mean_others']]
-#         X = sm.add_constant(X)
-#         y = subject_data['left_chosen']
-
-#         logit = sm.Logit(y, X)
-
-#         result = logit.fit(disp=0)
-#         predicted_pchooseleft = result.predict(X)
-
-#         subject_data['corrected_choice'] = subject_data['left_chosen'] - \
-#             predicted_pchooseleft
-#         data_out = pd.concat([data_out, subject_data])
-
-#     # Compute difference in corrected P(choose left) between positive and negative final gaze advantage
-#     tmp = data_out.groupby(['subject', 'left_longer']
-#                            ).corrected_choice.mean().unstack()
-#     gaze_influence = (tmp[True] - tmp[False]).values
-
-#     return gaze_influence
-
-
 def compute_gaze_influence_score(data, n_items=None):
     """
     Compute gaze influence score for each
@@ -369,27 +312,6 @@ def make_sure_path_exists(path):
         if exception.errno != errno.EEXIST:
             raise
 
-
-# def aggregate_subject_level(data, n_items):
-#     """
-#     Aggregates a single dataset to subject level
-#     """
-#     data = data.copy()
-
-#     # add best chosen variable
-#     data = add_best_chosen(data)
-
-#     # Summarize variables
-#     subject_summary = data.groupby('subject').agg({'rt': ['mean', std, 'min', 'max', se, q1, q3, iqr],
-#                                                    'best_chosen': 'mean'})
-#     # Influence of gaze on P(choose left)
-#     subject_summary['gaze_influence'] = compute_gaze_influence(
-#         data, n_items=n_items)
-
-#     subject_summary['dataset'] = data.groupby(
-#         'subject')['dataset'].head(1).values
-
-#     return subject_summary
 
 
 def aggregate_subject_level(data, n_items):

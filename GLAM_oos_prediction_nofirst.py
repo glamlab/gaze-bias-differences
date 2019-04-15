@@ -82,36 +82,6 @@ def fitPredictOOS(data, subject, n_repeats=50, n_tries=1, overwrite=False, progr
     even = subject_data[(subject_data['trial'] % 2) == 0].copy().reset_index(drop=True)
     odd = subject_data[(subject_data['trial'] % 2) == 1].copy().reset_index(drop=True)
 
-    # # Additive
-    # if (overwrite) or (not os.path.isfile(os.path.join('results', 'estimates', 'out_of_sample', 'additive', 'estimates_{}_additive_oos.csv'.format(subject)))):
-    #     print('\tS{}: Additive'.format(subject))
-
-    #     parameters = ['v', 's', 'tau', 'gamma']
-
-    #     additive = glam.GLAM(even, drift='additive')
-    #     additive.make_model('individual', gamma_bounds=(-100, 100), t0_val=0)
-
-    #     additive = fitModel(additive, relevant_parameters=parameters, n_tries_max=n_tries, progressbar=progressbar)
-    #     summary = pm.summary(additive.trace[0])
-    #     for parameter in parameters:
-    #         summary.loc[parameter + '__0_0', 'MAP'] = additive.estimates[parameter].values[0]
-    #     summary.to_csv(os.path.join('results', 'estimates', 'out_of_sample', 'additive', 'estimates_{}_additive_oos.csv'.format(subject)))
-
-    #     additive_model = additive.model[0]
-    #     additive_model.name = 'additive'
-    #     additive_trace = additive.trace[0]
-    #     pm.trace_to_dataframe(additive_trace).to_csv(os.path.join('results', 'traces', 'out_of_sample', 'additive', 'trace_{}_additive_oos.csv'.format(subject)))
-    #     pm.traceplot(additive_trace)
-    #     plt.savefig(os.path.join('results', 'traces', 'out_of_sample', 'additive', 'plots', 'traceplot_{}_additive_oos.png'.format(subject)))
-    #     plt.close()
-
-    #     # out of sample prediction
-    #     additive.exchange_data(odd)
-    #     additive.predict(n_repeats=n_repeats)
-    #     additive.prediction['subject'] = subject
-    #     additive.prediction.to_csv(os.path.join('results', 'predictions', 'out_of_sample', 'additive', 'prediction_{}_additive_oos.csv'.format(subject)))
-    # else:
-    #     print("Previous estimates found for additive model (Subject {}). Skipping...".format(subject))
 
     # GLAM
     if (overwrite) or (not os.path.isfile(os.path.join('results', 'estimates', 'out_of_sample', 'GLAM_nofirst', 'estimates_{}_GLAM_nofirst_oos.csv'.format(subject)))):
@@ -144,38 +114,6 @@ def fitPredictOOS(data, subject, n_repeats=50, n_tries=1, overwrite=False, progr
         GLAM.prediction.to_csv(os.path.join('results', 'predictions', 'out_of_sample', 'GLAM_nofirst', 'prediction_{}_GLAM_oos.csv'.format(subject)))
     else:
         print("Previous estimates found for GLAM model (Subject {}). Skipping...".format(subject))
-
-    # # No-Bias
-    # if (overwrite) or (not os.path.isfile(os.path.join('results', 'estimates', 'out_of_sample', 'nobias', 'estimates_{}_nobias_oos.csv'.format(subject)))):
-    #     print('\tS{}: No Bias'.format(subject))
-
-    #     parameters = ['v', 's', 'tau']
-
-    #     nobias = glam.GLAM(even, drift='additive')
-    #     nobias.make_model('individual', gamma_val=0.0, t0_val=0)
-
-    #     nobias = fitModel(nobias, relevant_parameters=parameters, n_tries_max=n_tries, progressbar=progressbar)
-    #     summary = pm.summary(nobias.trace[0])
-    #     for parameter in parameters:
-    #         summary.loc[parameter + '__0_0', 'MAP'] = nobias.estimates[parameter].values[0]
-    #     summary.to_csv(os.path.join('results', 'estimates', 'out_of_sample', 'nobias', 'estimates_{}_nobias_oos.csv'.format(subject)))
-
-    #     nobias_model = nobias.model[0]
-    #     nobias_model.name = 'nobias'
-    #     nobias_trace = nobias.trace[0]
-    #     pm.trace_to_dataframe(nobias_trace).to_csv(os.path.join('results', 'traces', 'out_of_sample', 'nobias', 'trace_{}_nobias_oos.csv'.format(subject)))
-    #     pm.traceplot(nobias_trace)
-    #     plt.savefig(os.path.join('results', 'traces', 'out_of_sample', 'nobias', 'plots', 'traceplot_{}_nobias_oos.png'.format(subject)))
-    #     plt.close()
-
-    #     # out of sample prediction
-    #     nobias.exchange_data(odd)
-    #     nobias.predict(n_repeats=n_repeats)
-    #     nobias.prediction['subject'] = subject
-
-    #     nobias.prediction.to_csv(os.path.join('results', 'predictions', 'out_of_sample', 'nobias', 'prediction_{}_nobias_oos.csv'.format(subject)))
-    # else:
-    #     print("Previous estimates found for no-bias model (Subject {}). Skipping...".format(subject))
 
     return
 
