@@ -1,6 +1,6 @@
 # Gaze Bias Differences Capture Individual Choice Behavior
 
-This repository contains data and python code to reproduce all analyses performed in the manuscript:
+This repository contains data and python code to reproduce all analyses performed in
 
 Gaze Bias Differences Capture Individual Choice Behavior
 Thomas, A. W.* & Molter, F.*, Krajbich, I., Heekeren, H. R. H. & Mohr, P. N. C.
