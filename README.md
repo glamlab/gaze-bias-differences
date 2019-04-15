@@ -2,9 +2,10 @@
 
 This repository contains data and python code to reproduce all analyses performed in
 
-Gaze Bias Differences Capture Individual Choice Behavior
-Thomas, A. W.* & Molter, F.*, Krajbich, I., Heekeren, H. R. H. & Mohr, P. N. C.
-Nature Human Behaviour, 2019, X(X), p. XXX. doi: http://dx.doi.org/10.1038/s41562-019-0584-8
+**Gaze Bias Differences Capture Individual Choice Behavior**  
+Thomas, A. W.* & Molter, F.*, Krajbich, I., Heekeren, H. R. H. & Mohr, P. N. C.  
+Nature Human Behaviour, 2019, X(X), p. XXX.  
+doi: http://dx.doi.org/10.1038/s41562-019-0584-8
 
 *shared first authorship with equal contribution
 
