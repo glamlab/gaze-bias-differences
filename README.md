@@ -31,3 +31,5 @@ Additional supplementary analyses are contained in the following Jupyter noteboo
     - Recovery performed using `GLAM_parameter_recovery.py` script
 
 The files `analysis_functions.py` and `plotting_functions.py` contain shared functions that are loaded by each notebook separately.
+
+The data from Folke et al. (2016) are licensed under a [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license and can originally be obtained from [figshare](https://figshare.com/articles/Explicit_representations_of_confidence_informs_future_value-based_decisions/3756144/2).
